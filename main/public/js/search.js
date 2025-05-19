@@ -1,14 +1,35 @@
 
-
 // 初期化
 document.addEventListener('DOMContentLoaded',() => {
-    document.getElementById('search-input').addEventListener('input',(e)=>{
+    DOMs.search_input().addEventListener('input',(e)=>{
         incrementalSearch(e.target.value);
     })
 })
 
-function log(text){
-    document.getElementById('suggests').textContent = text; 
+class DOMs {
+    static search_input(){
+        return document.getElementById('search-input');
+    }
+}
+
+// ['HTML','CSS', ...]
+/**
+ * 
+ * @param {string[]} data 
+ */
+function updateSuggests(data) {
+    const ul = document.getElementById('suggests-list');
+    ul.innerHTML = '';
+    data.forEach((tag) => {
+        const li = document.createElement('li');
+        li.id = tag;
+        li.textContent = tag;
+        li.addEventListener('click',()=>{
+            DOMs.search_input().value = '#' + tag; 
+            DOMs.search_input().dispatchEvent(new Event('input'));
+        });
+        ul.appendChild(li);
+    });
 }
 
 // インクリメンタルサーチ
@@ -39,7 +60,7 @@ async function incrementalSearch(keyword){
 
         const results = data.results;
         
-        log(results);
+        updateSuggests(results);
     } catch (error) {
         console.log(error.message);
     }
