@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>[ページタイトル]</title>
+    <style>
+        body { font-family: sans-serif;}
+        .page-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #view-editor-container { 
+            display: flex; 
+            gap: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #view, #editor {
+            flex: 1;
+            height: 90vh; 
+            box-sizing: border-box;
+        }
+        #view { 
+            overflow-y: auto; 
+            padding: 1rem; 
+            border: 1px solid #ccc; 
+        }
+        #editor {
+            font-size: 16px;
+            resize: none;
+        }
+        #editor.hidden {
+            display: none;
+        }
+        #save { margin-top: 1em; }
+        #toggleEditor {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+    </style>
+
+    <!-- markdown-it -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-container/dist/markdown-it-container.min.js"></script> -->
+
+    <!-- プラグイン -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji/dist/markdown-it-emoji.min.js"></script>                絵文字 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists/dist/markdown-it-task-lists.min.js"></script>     タスクリスト -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote/dist/markdown-it-footnote.min.js"></script>         脚注 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub/dist/markdown-it-sub.min.js"></script>                   下付き文字 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup/dist/markdown-it-sup.min.js"></script>                   上付き文字 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-ins/dist/markdown-it-ins.min.js"></script>                   下線 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark/dist/markdown-it-mark.min.js"></script>                 マーカー -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-anchor/dist/markdown-it-anchor.min.js"></script>             アンカー付き見出し -->
+
+    <!-- KaTeX数式 -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-katex/dist/markdown-it-katex.min.js"></script> -->
+
+    <!-- コードハイライト -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/build/highlight.min.js"></script> -->
+</head>
+<body>
+    <button onclick="toggleEditor()" id="toggleEditor">開く</button>
+    <div class="page-container">
+        <h2 id="title"></h2>
+        <div id="view-editor-container">
+            <div id="view"></div>
+            <textarea id="editor" placeholder="Markdownを入力してください..." class="hidden"></textarea>
+        </div>
+        <button id="save">保存</button>
+    </div>
+
+    <!--編集エリアの開閉-->
+    <script>
+        function toggleEditor(){
+            const editor = document.getElementById('editor');
+            const button = document.getElementById('toggleEditor');
+            const isHidden = editor.classList.contains('hidden');
+            if(isHidden){
+                editor.classList.remove('hidden');
+                button.textContent = '閉じる';
+            } else {
+                editor.classList.add('hidden');
+                button.textContent = '開く';
+            }
+        }
+    </script>
+
+    <script>
+        const md = window.markdownit({
+            html: true,
+            // linkify: true,
+            // typographer: true
+        });
+
+        // プラグイン適用
+        // md
+        // .use(window.markdownitEmoji)
+        // .use(window.markdownitTaskLists, { enabled: true })
+        // .use(window.markdownitFootnote)
+        // .use(window.markdownitSub)
+        // .use(window.markdownitSup)
+        // .use(window.markdownitIns)
+        // .use(window.markdownitMark)
+        // .use(window.markdownitAnchor, {
+        // })
+        // .use(window.markdownitKatex)
+        // .use(window.markdownitContainer, 'details', {
+        //     render(tokens, idx) {
+        //         const token = tokens[idx];
+        //         if (token.nesting === 1) {
+        //             // 開始タグ
+        //             const info = token.info.trim().slice('details'.length).trim();
+        //             return `<details><summary>${md.utils.escapeHtml(info)}</summary>\n`;
+        //         } else {
+        //             // 終了タグ
+        //             return '</details>\n';
+        //         }
+        //     }
+        // });
+    </script>
+
+    <script>
+        // タイトルの変更
+        const title = decodeURIComponent(location.pathname.split('/').pop());
+        document.title = title;
+
+        const editor = document.getElementById('editor');
+        const view = document.getElementById('view');
+        const saveBtn = document.getElementById('save');
+
+        // textareの変更
+        editor.addEventListener('input', () => {
+            view.innerHTML = md.render(editor.value);
+        });
+
+        // DBからページ内容の取得
+        async function fetchPage() {
+            try {
+                const res = await fetch(`/api/page/${encodeURIComponent(title)}`);
+                const data = await res.json();
+                if(data.status === 'error') {
+                    throw new Error(data.message);
+                }
+                editor.value = data.content;
+                view.innerHTML = md.render(editor.value);
+            } catch (err) {
+                console.error(err);
+                editor.value = '';
+                view.innerHTML = '<p><em>このページはまだ存在しません。</em></p>';
+            }
+        }
+
+        // 保存ボタン処理
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const content = editor.value;
+                const res = await fetch(`/api/page/${encodeURIComponent(title)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if(data.status === 'error') {
+                    throw new Error(data.message);
+                }
+
+                alert('保存しました');   
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            }
+        });
+
+        // 初期読み込み
+        fetchPage();
+    </script>
+</body>
+</html>

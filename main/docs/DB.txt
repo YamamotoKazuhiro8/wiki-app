@@ -1,0 +1,103 @@
+
+DROP TABLE IF EXISTS
+    category_categories,
+    page_series,
+    page_words,
+    page_categories,
+    page_tags;
+
+DROP TABLE IF EXISTS
+    series,
+    categories,
+    tags,
+    words,
+    pages;
+
+-- page
+CREATE TABLE pages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL UNIQUE,
+    content TEXT NOT NULL
+);
+
+-- word
+CREATE TABLE words (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- tag
+CREATE TABLE tags (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- category
+CREATE TABLE categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- series
+CREATE TABLE series (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- page_tag
+CREATE TABLE page_tags (
+    page_id INT,
+    tag_id INT,
+    FOREIGN KEY (page_id) REFERENCES pages(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+);
+
+-- page_category
+CREATE TABLE page_categories (
+    page_id INT,
+    category_id INT,
+    FOREIGN KEY (page_id) REFERENCES pages(id),
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- page_word
+CREATE TABLE page_words (
+    page_id INT,
+    word_id INT,
+    FOREIGN KEY (page_id) REFERENCES pages(id),
+    FOREIGN KEY (word_id) REFERENCES words(id)
+);
+
+-- page_series 
+CREATE TABLE page_series (
+    page_id INT,
+    series_id INT,
+    order_in_series INT NOT NULL,
+    FOREIGN KEY (page_id) REFERENCES pages(id),
+    FOREIGN KEY (series_id) REFERENCES series(id)
+);
+
+-- category_category
+CREATE TABLE category_categories (
+    parent_id INT,
+    child_id INT,
+    FOREIGN KEY (parent_id) REFERENCES categories(id),
+    FOREIGN KEY (child_id) REFERENCES categories(id)
+);
+
+-- testPage
+DELETE FROM pages WHERE title = 'テストページ';
+INSERT INTO pages (title, content) VALUES
+(   'テストページ', 
+    '# h1タイトル\n\n## h2タイトル\n\n**太字**'
+);
+
+INSERT INTO tags (name) VALUES 
+(HTML),
+(CSS),
+(JavaScript),
+(Java),
+(C),
+(C#),
+(C++),
+(Python);
