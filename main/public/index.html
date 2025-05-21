@@ -15,27 +15,25 @@
             <button onclick="">新規作成</button>
         </div>
 
-
         <!--キーワード検索-->
         <div class="search-area">
-            <div class="search-column"></div>
+            <div class="search-column">
                 <input type="text" placeholder="キーワード検索" id="input-keyword">
-                <button onclick="">🔍</button>              
-            <div id="keyword-serach-table"></div>
+                <button onclick="">🔍</button>     
+            </div>         
         </div>
 
         <!--タグ検索-->
         <div class="search-area">
-            <div class="search-column"></div>
-                <input type="text" placeholder="タグ検索" id="input-tag">
-                <button onclick="">🔍</button>              
-            <div id="keyword-suggests"></div>
+            <input type="text" placeholder="タグ検索" id="input-tag">  
+            <div id="tag-search-state" class="hidden"></div>
+            <div id="suggested-tag-list"></div>
         </div>
-        <!--タグ表示-->
+        <!--選択したタグの表示-->
         <div>
-            <ul id="tag-list" data-setTag="false">
-                <li class="tag-item">すべて</li>
-            </ul>
+            <div id="selected-tag-list">
+                <div class="selected-tag">すべて</li>
+            </div>
         </div>
 
         <!--並び順選択-->

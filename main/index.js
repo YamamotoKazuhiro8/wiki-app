@@ -110,7 +110,7 @@ app.post('/api/search', async (req, res) => {
 
         const resultObj = {};
         rows.forEach(row => {
-            resultObj[row.name] = row.id;
+            resultObj[row.id] = row.name;
         });
         res.json({ results: resultObj });
     } catch (err) {

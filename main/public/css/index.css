@@ -3,6 +3,10 @@ body{
     margin: 0;
 }
 
+.hidden {
+    display: none;
+}
+
 #page-container {
     padding-top: 1px;
     max-width: 880px;
@@ -12,19 +16,23 @@ body{
 
 /*検索欄 - 新規作成ボタン*/
 
-
     /* input {
         font-size: 16px;
         padding: 0.8rem 2.6rem 0.8rem 1rem;
         border-radius: 100vh;
         border: 1px solid black;
     } */
-
-#tag-list {
+     
+#input-tag {
 }
 
-.tag-item {
-}
+#suggested-tag-list {
+    display: flex;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0;
+} 
 
-#search-result-container {
+#selected-tag-list .selected-tag {
+    margin-right: 0.4rem;
 }
