@@ -3,153 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>検索ページ</title>
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
-    <script src="js/search.js"></script>
-    <style>
-        .page-container {
-            max-width: 880px;
-            padding-top: 1px;
-            margin: auto;
-        }
-
-        .search-container {
-            margin: 0 auto;
-            position: relative;
-            width: fit-content;
-        }
-
-        .search-window{
-            position: relative;
-            margin-top: 3rem;
-        }
-
-        #search-input {
-            width: 20rem;
-            font-size: 16px;
-            padding: 0.8rem 2.6rem 0.8rem 1rem;
-            border-radius: 100vh;
-            border: 1px solid black;
-        }
-
-        .search-window button {
-            position: absolute;
-            top: 50%;
-            right: 0.5rem;
-            transform: translateY(-50%);
-            border-radius: 100vh;
-            border: white;
-            background-color: white;
-            padding: 0.5rem;
-        }
-
-        .search-window button:hover {
-            cursor: pointer;
-        }
-
-        .search-type {
-            margin-left: auto;
-            text-align: right;
-        }
-
-        #search-type {
-            height: 1.4rem;
-        }
-
-        .tag-list-container {
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.5em;
-            white-space: nowrap;
-        }
-
-        #tag-list {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        #tag-list li{
-            padding: 0 0.4rem;
-            background-color: white;
-            border: 1px solid black;
-            list-style: none;
-            border-radius: 0.6rem;
-        }
-
-                #suggests-list {
-            display: flex;
-            gap: 0.3rem;
-            flex-wrap: wrap;
-        }
-
-        #suggests-list li {
-            list-style: none;
-            background-color: white;
-            border: 1px solid black;
-            border-radius: 0.6rem;
-            min-width: 2rem;
-            text-align: center;
-            padding: 0 0.2rem;
-        }
-        #suggests-list li:hover {
-            background-color: #eee;
-            cursor: pointer;
-        }
-    </style>
+    <title>検索</title>
+    <link rel="stylesheet" href="css/index.css">
+    <script src="js/search.js" defer></script>
 </head>
 <body>
-    <div class="page-container">
-        
-        <div class="search-container">
-            <div class="search-window">
-                <input type="text" id="search-input" placeholder="検索...">
-                <button onclick="search()">🔍</button>
-            </div>
-            <!--検索タイプの変更-->
-            <div class="search-type">
-                <label for="search-type">検索タイプ：</label>
-                <select id="search-type" name="search-type">
-                    <option value="title" selected>タイトル</option>
-                    <option value="content">全文</option>
-                    <option value="tag">タグ</option>
-                    <option value="category">カテゴリー</option>
-                    <option value="series">シリーズ</option>
-                </select>
-            </div>
+    <div id="page-container">
+
+        <!--新規ぺージ作成ボタン-->
+        <div>
+            <button onclick="">新規作成</button>
         </div>
 
-        <div id="suggests"></div>
 
-        <!-- <div class="tag-list-container">
-            <span>タグ:</span><ul id="tag-list"></ul>
-        </div> -->
+        <!--キーワード検索-->
+        <div class="search-area">
+            <div class="search-column"></div>
+                <input type="text" placeholder="キーワード検索" id="input-keyword">
+                <button onclick="">🔍</button>              
+            <div id="keyword-serach-table"></div>
+        </div>
+
+        <!--タグ検索-->
+        <div class="search-area">
+            <div class="search-column"></div>
+                <input type="text" placeholder="タグ検索" id="input-tag">
+                <button onclick="">🔍</button>              
+            <div id="keyword-suggests"></div>
+        </div>
+        <!--タグ表示-->
+        <div>
+            <ul id="tag-list" data-setTag="false">
+                <li class="tag-item">すべて</li>
+            </ul>
+        </div>
+
+        <!--並び順選択-->
+        <label for="sortOrder">並び順</label>
+        <select name="sortOrder" id="sortOrder">
+            <option value="latest" selected>最近</option>
+            <option value="old">古い順</option>
+            <option value="new">新しい順</option>
+        </select>
+
+        <!--検索結果表示-->
+        <div id="search-result-container">
+            結果表示
+        </div>
     </div>
 
-    <div>
-        <ul id="suggests-list">
-            <!-- <li></li> -->
-        </ul>
-    </div>
-
-    <!-- <script>
-        const tags = new Set();
-
-        function addTag(tagName){
-            const ul = document.getElementById('tag-list');
-            const li = document.createElement('li');
-            li.textContent = '#' + tagName;
-            ul.appendChild(li);
-            tags.add(tagName); 
-        }
-
-        addTag('HTML');
-        addTag('CSS');
-        addTag('JavaScript');
-    </script> -->
+    <script>
+    </script>
 </body>
 </html>

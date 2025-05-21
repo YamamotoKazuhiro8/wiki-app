@@ -100,14 +100,19 @@ app.post('/api/search', async (req, res) => {
 
 
         const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT name FROM tags WHERE name Like ?', [`%${keyword}%`]);
+        const [rows] = await connection.execute('SELECT id,name FROM tags WHERE name Like ?', [`%${keyword}%`]);
 
 
         // 優先度でソート
 
 
-        // res.json({ results: rows });
-        res.json({ results: rows.map(r => r.name) });
+        // Mapに変換
+
+        const resultObj = {};
+        rows.forEach(row => {
+            resultObj[row.name] = row.id;
+        });
+        res.json({ results: resultObj });
     } catch (err) {
       console.error(err);
       res.status(500).json({ status: 'error', message: 'サーバーエラー' });
