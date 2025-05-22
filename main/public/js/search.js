@@ -1,10 +1,11 @@
 
 // 注意:new Map(Object.entries(data.results))は大量になると重い。Object.keys(data.results)を使う
-// 次: ページ検索とタグ検索両方に用いる抽象化
 
-let previousInput_tag = [];           // 前回のタグ欄での検索ワード
+let previousInput_tag = [];           // タグ検索欄における前回の入力
+let previousInput_page = [];          // ページ検索欄における前回の入力
 const selectedTagList = new Map();    // 選択中のタグ<id, name>
 let tagSearchController = null;       // AbortController管理
+let pageSearchController = null;
 
 // ーーー初期化ーーー
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,17 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ーーーメイン処理ーーー
-const debouncedTagInput = debounce(handleTagInput, 300);
+const debouncedTagInput = debounce(handleTagInput, 200); // 200ms待って handleTagInputを呼ぶ
 
 // タグ入力の処理（debounce適用済みで呼ばれる）
 async function handleTagInput() {
-    const tags = getInputTags();
+    const inputTags = getInputTags();
 
     // 前回と同じなら処理しない
-    if (arrayEqual(previousInput_tag, tags)) return;
-    previousInput_tag = tags;
+    if (arrayEqual(previousInput_tag, inputTags)) return;
+    previousInput_tag = inputTags;
 
-    if (tags.length === 0) {
+    if (inputTags.length === 0) {
         setSuggested_Tag(new Map());
         setSearchState_tag('close');
         return;
@@ -36,7 +37,7 @@ async function handleTagInput() {
     tagSearchController = new AbortController();
 
     try {
-        const result = await searchTag(tags, tagSearchController.signal);
+        const result = await searchTags(inputTags, tagSearchController.signal);
         if (setSuggested_Tag(result)) {
             setSearchState_tag('');
             return;
@@ -48,8 +49,40 @@ async function handleTagInput() {
             return;
         }
         // ここでエラーメッセージ表示など
-        console.error(error);
-        setSearchState_tag('error');
+        setSearchState_tag('');
+        alert(`${error.status} : ${error.message}`);
+    }
+}
+
+// ページ検索入力の処理（debounce適用済みで呼ばれる）
+async function handlePageInput() {
+    const inputPages = getInputPages(); // ページ検索欄の入力を取得
+
+    if(arrayEqual(inputPages, previousInput_page)) return;
+    previousInput_page = inputPages;
+
+    setSearchState_page('');
+    setPageSearchResult([]);
+
+    // 既存リクエストをキャンセル
+    if (pageSearchController) pageSearchController.abort();
+    pageSearchController = new AbortController();
+
+    try {
+        const result = await searchTags(pageSearchController.signal);
+        if (setPageSearchResult(result)) {
+            setSearchState_page('');
+            return;
+        }
+        setSearchState_page('noData');
+    } catch (error) {
+        if (error.name === 'noData') {
+            setSearchState_page('noData');
+            return;
+        }
+        // ここでエラーメッセージ表示など
+        setSearchState_page('');
+        alert(`${error.status} : ${error.message}`);
     }
 }
 
@@ -156,10 +189,21 @@ function removeFromSelectedTagList(id, tagButton) {
     }
 }
 
-// 検索状態表示切り替え
-// 'close', 'noData', '' などの状態文字列で切り替え
+// タグ検索状態表示切り替え
+// 'noData', '' などの状態文字列で切り替え
 function setSearchState_tag(state) {
     document.getElementById('tag-search-state').textContent = state;
+}
+
+/**
+ * ページ検索結果の表示
+ * @param {string[]} titles 
+ */
+function setPageSearchResult(titles) {
+}
+
+// ページ検索状態表示切り替え
+function setSearchState_page(state) {
 }
 
 // ーーー検索関数ーーー
@@ -170,36 +214,91 @@ function getInputTags() {
     return input.split(/[\s\u3000]/ug).filter(phrase => phrase.trim() !== '');
 }
 
+// ページ検索入力文字列の配列を取得
+function getInputPages() {
+    const input = document.getElementById('input-page').value;
+    return input.split(/[\s\u3000]/ug).filter(phrase => phrase.trim() !== '');
+}
+
 // タグ検索 API 呼び出し
 /**
- * @param {string[]} word タグキーワード配列
+ * @param {string[]} inputTags タグキーワード配列
  * @param {AbortSignal} signal キャンセル信号
  * @return {Promise<Map<Number,string>>} 検索結果マップ<tag_id, name>
  */
-async function searchTag(word, signal) {
+async function searchTags(inputTags, signal) {
     const res = await fetch('/api/search', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             type: 'tag',
-            keyword: word
+            keyword: inputTags[0]
         }),
-        signal // fetch のキャンセル用信号
+        signal: signal // fetch のキャンセル用信号
     });
 
-    if (!res.ok) throw new Error(res.status);
+    if (!res.ok) throw err(res.status, res.statusText);
 
     const data = await res.json();
 
-    if (data.status === 'error') {
-        const err = new Error(data.message);
-        err.name = 'error';
-        throw err;
-    } else if (data.status === 'noData') {
-        const err = new Error('データなし');
-        err.name = 'noData';
-        throw err;
+    if(res.status === "success") return new Map(Object.entries(data.results));
+
+    throw err(data.status, data.message);
+}
+
+// ページ検索 API 呼び出し
+/**
+ * @param {string[]} inputPages ページキーワード配列
+ * @param {AbortSignal} signal  キャンセル信号
+ * @return {Promise<string[]>}  検索結果配列titles[]
+ */
+async function searchPages(inputPages, signal) {
+
+    // Tag_id
+    const tag_id = [];
+    previousInput_tag.forEach((name, id) => {
+        tag_id.push(id);
+    });
+
+    const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            type: 'title',
+            keyword: inputPages[0],
+            tag: tag_id[0]
+        }),
+        signal
+    });
+
+    if (!res.ok) {
+        throw err('error', res.statusText);
     }
 
-    return new Map(Object.entries(data.results));
+    const data = await res.json();
+
+    if(data.status === 'success') return Object.entries(data.results)
+
+    throw err(data.status, data.message);
+}
+
+/**
+ * 安全に任意のコールバック関数を呼び出す
+ * 
+ * @param {Object} callbacks - コールバック関数の集合
+ * @param {string} key - 実行したいキー（例: 'success'）
+ * @param  {...any} args - コールバックに渡す引数
+ */
+function safeCall(callbacks, key, ...args) {
+    if (callbacks && typeof callbacks[key] === 'function') {
+        callbacks[key](...args);
+    } else {
+        console.warn(`Callback '${key}' is not defined or not a function.`);
+    }
+}
+
+function err(status, message){
+    const err = new Error(message);
+    err.status = status;
+    return err;
 }

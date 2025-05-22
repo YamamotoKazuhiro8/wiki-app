@@ -96,29 +96,77 @@ app.post('/api/page/:title', async (req, res) => {
 // }
 app.post('/api/search', async (req, res) => {
     try {
-        const { type, keyword } = req.body;
-        console.log('受信:', { type, keyword });
+        const { type, keyword, tag } = req.body;
+        console.log('受信:', { type, keyword, tag });
 
 
         const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT id,name FROM tags WHERE name Like ?', [`%${keyword}%`]);
+        
+        if(type ==='tag') {
+            const [rows] = await connection.execute('SELECT id,name FROM tags WHERE name Like ?', [`%${keyword}%`]);
+        
+            if(rows.length === 0) {
+                return res.json({status: 'noData', message:'not found'});
+            }
 
-        if(rows.length === 0) {
-            res.json({status: 'noData'});
+            // 優先度でソート
+
+
+            // Mapに変換
+            const resultObj = {};
+            rows.forEach(row => {
+                resultObj[row.id] = row.name;
+            });
+
+            return res.json({ results: resultObj });
+        } else if(type === 'title') {
+
+            // 1.title も tagもない時
+            //    全ページをソートして返す
+            // 2.titleなし tagあり
+            //    タグの付くページを返す
+            // 3.titleあり tagなし
+            // 4.titleあり tagあり
+
+            // ページ検索（キーワード＆タグ）
+            /
+
+            const conditions = []; // whereの後
+            const params = [];     // executeに用いる
+
+            if (keyword) {
+                conditions.push('title LIKE ?');
+                params.push(`%${keyword}%`);
+            }
+
+            if (tag) {
+                conditions.push('EXISTS (SELECT 1 FROM page_tags pt WHERE pt.page_id = pages.id AND pt.tag_id = ?)');
+                params.push(tag);
+            }
+
+            const query = `
+                SELECT id, title FROM pages 
+                WHERE ${conditions.join(' AND ')}
+            `;
+
+            [rows] = await connection.execute(query, params);
+
+            if (rows.length === 0) {
+                return res.json({ status: 'noData', message: 'ページが見つかりませんでした。' });
+            }
+
+            const resultObj = {};
+            rows.forEach(row => {
+                resultObj[row.id] = row.title;
+            });
+
+            return res.json({ results: resultObj });
         }
 
-        // 優先度でソート
-
-
-        // Mapに変換
-        const resultObj = {};
-        rows.forEach(row => {
-            resultObj[row.id] = row.name;
-        });
-        res.json({ results: resultObj });
+        return res.json({status:'error:',message:'undefinedな検索'});
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ status: 'error', message: 'サーバーエラー' });
+        console.error(err);
+        res.status(500).json({ message: 'サーバーエラー' });
     }
 });
 
