@@ -1,25 +1,85 @@
 
 // 注意:new Map(Object.entries(data.results))は大量になると重い。Object.keys(data.results)を使う
+// 次: ページ検索とタグ検索両方に用いる抽象化
 
-let previousInput_tag = [];        // 前回のタグ欄での検索ワード
-const selectedTagList = new Map(); // 選択中のタグ<id, name>
+let previousInput_tag = [];           // 前回のタグ欄での検索ワード
+const selectedTagList = new Map();    // 選択中のタグ<id, name>
+let tagSearchController = null;       // AbortController管理
 
-// 単語配列の比較
+// ーーー初期化ーーー
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('input-tag').addEventListener('input', debouncedTagInput);
+});
+
+// ーーーメイン処理ーーー
+const debouncedTagInput = debounce(handleTagInput, 300);
+
+// タグ入力の処理（debounce適用済みで呼ばれる）
+async function handleTagInput() {
+    const tags = getInputTags();
+
+    // 前回と同じなら処理しない
+    if (arrayEqual(previousInput_tag, tags)) return;
+    previousInput_tag = tags;
+
+    if (tags.length === 0) {
+        setSuggested_Tag(new Map());
+        setSearchState_tag('close');
+        return;
+    }
+
+    setSearchState_tag('');
+    setSuggested_Tag(new Map());
+
+    // 既存リクエストをキャンセル
+    if (tagSearchController) tagSearchController.abort();
+    tagSearchController = new AbortController();
+
+    try {
+        const result = await searchTag(tags, tagSearchController.signal);
+        if (setSuggested_Tag(result)) {
+            setSearchState_tag('');
+            return;
+        }
+        setSearchState_tag('noData');
+    } catch (error) {
+        if (error.name === 'noData') {
+            setSearchState_tag('noData');
+            return;
+        }
+        // ここでエラーメッセージ表示など
+        console.error(error);
+        setSearchState_tag('error');
+    }
+}
+
+// ーーーユーティリティ関数ーーー
+
+// 配列の比較（単純な値の一致）
 function arrayEqual(a, b) {
     if (a.length !== b.length) return false;
     return a.every((val, index) => val === b[index]);
 }
 
-// サジェストするタグ
+// debounce関数
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// サジェスト用タグボタン作成
 function suggestedTag(name, onclick) {
     const button = document.createElement('button');
-    button.className = `suggested-tag`;
+    button.className = 'suggested-tag';
     button.textContent = name;
-    button.addEventListener('click', () => {onclick(button);})
+    button.addEventListener('click', () => onclick(button));
     return button;
 }
 
-// 選択されたタグ
+// 選択中タグ表示要素作成
 function selectedTag(id, name, onclick) {
     const div = document.createElement('div');
     div.className = 'selected-tag';
@@ -31,244 +91,115 @@ function selectedTag(id, name, onclick) {
     const button = document.createElement('button');
     button.textContent = '×';
     button.dataset.tagID = id;
-    button.addEventListener('click', () => {onclick(id, div)});
+    button.addEventListener('click', () => onclick(id, div));
     div.appendChild(button);
 
     return div;
 }
 
+// ーーーDOM操作ーーー
 
-// タグ検索入力欄の変更
-document.getElementById('input-tag').addEventListener('input', debouncedTagInput)
+// サジェスト欄にタグを追加
+// 返り値: 新しいタグを追加できたかどうか
+function setSuggested_Tag(tags) {
+    const div = document.getElementById('suggested-tag-list');
+    div.innerHTML = '';  // 既存の候補をクリア
+    if (tags.size === 0) return false;
 
-// debounceで300ms以内の連続入力を制御
-const debouncedTagInput = debounce(handleTagInput, 300);
+    const fragment = document.createDocumentFragment();
+    let added = false;
+    tags.forEach((name, id) => {
+        if (selectedTagList.has(id)) return;  // 既に選択済みはスキップ
+        added = true;
 
-// debounce関数の定義
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout); // 前回のタイマーをキャンセル
-        timeout = setTimeout(() => {
-            func.apply(this, args); // 一定時間後に実行
-        }, wait);
-    };
+        const button = suggestedTag(name, btn => {
+            btn.remove();
+            addToSelectedTagList(id, name);
+        });
+
+        fragment.appendChild(button);
+    });
+
+    if (!added) return false;
+
+    div.appendChild(fragment);
+    return true;
 }
 
-// タグ検索処理
-async function handleTagInput() {
-    // 入力されたタグの取得
-    const tags = getTags();
-    if(!shouldStartTagSearch(tags)) return;
-    beforeTagSearch();
+// 選択タグリストに追加
+function addToSelectedTagList(id, name) {
+    const div = document.getElementById('selected-tag-list');
 
-    const result = await searchTag(tags);
+    if (selectedTagList.size === 0) {
+        // 「すべて」タグ非表示（初回追加時）
+        div.querySelector('.selected-tag').classList.add('hidden');
+    }
 
-    // 結果表示待ちか判定
+    selectedTagList.set(id, name);
 
-    onTagSearchComplete(result);
+    const tag = selectedTag(id, name, (_id, btn) => {
+        removeFromSelectedTagList(_id, btn);
+    });
+
+    div.appendChild(tag);
 }
 
-// AbortController
-let tagSearchController = null;
-async function handleTagInput() {
-    const tags = getTags();
-    if (!shouldStartTagSearch(tags)) return;
-    beforeTagSearch();
+// 選択タグリストから削除
+function removeFromSelectedTagList(id, tagButton) {
+    selectedTagList.delete(id);
+    tagButton.remove();
 
-    // リクエスト中の検索をキャンセル
-    if (tagSearchController) tagSearchController.abort();
-    // AbortControllerを作成
-    tagSearchController = new AbortController();
-
-    try {
-        const result = await searchTag(tags, tagSearchController.signal); // 必ず1つ以上のタグ
-        onTagSearchComplete(result);
-    } catch(error) {
-        if(error.name === 'noData'){
-            // noDataの表示
-            return;
-        }
-        // エラーの表示
-        return;
+    if (selectedTagList.size === 0) {
+        // 「すべて」タグを表示
+        const div = document.getElementById('selected-tag-list');
+        div.querySelector('.selected-tag').classList.remove('hidden');
     }
 }
 
+// 検索状態表示切り替え
+// 'close', 'noData', '' などの状態文字列で切り替え
+function setSearchState_tag(state) {
+    document.getElementById('tag-search-state').textContent = state;
+}
 
-// タグの検索
+// ーーー検索関数ーーー
+
+// 入力タグ文字列から配列取得
+function getInputTags() {
+    const input = document.getElementById('input-tag').value;
+    return input.split(/[\s\u3000]/ug).filter(phrase => phrase.trim() !== '');
+}
+
+// タグ検索 API 呼び出し
 /**
- * @param {string} word
- * @return {Promise<Map<Number, string>>} 検索結果（タグのMap）<tag_id, name>
+ * @param {string[]} word タグキーワード配列
+ * @param {AbortSignal} signal キャンセル信号
+ * @return {Promise<Map<Number,string>>} 検索結果マップ<tag_id, name>
  */
-async function searchTag(word, signal){
-
+async function searchTag(word, signal) {
     const res = await fetch('/api/search', {
-        method:'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            type: 'tag',    // type設定
-            keyword: word   // 検索ワード
-        })
+            type: 'tag',
+            keyword: word
+        }),
+        signal // fetch のキャンセル用信号
     });
 
-    if(!res.ok) throw new Error(res.status);
+    if (!res.ok) throw new Error(res.status);
 
     const data = await res.json();
 
-    if(data.status === 'error') {
+    if (data.status === 'error') {
         const err = new Error(data.message);
         err.name = 'error';
         throw err;
-    } else if(data.status === 'noData') {
+    } else if (data.status === 'noData') {
         const err = new Error('データなし');
         err.name = 'noData';
         throw err;
     }
 
-    // Mapに変換
     return new Map(Object.entries(data.results));
-}
-
-
-// タグサーチを開始するか判定
-function shouldStartTagSearch() {
-    // 条件判定処理（例：入力が空でない、通信中でないなど）
-}
-
-// タグサーチの開始直前に呼ばれる
-// UIの準備
-function beforeTagSearch() {
-    // 読み込み中の表示
-}
-
-// タグサーチ完了時に呼び出される
-// 
-function onTagSearchComplete(result) {
-    // 読み込み表示の終了
-
-    // サジェストに追加
-}
-
-// ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
-
-/**
- * サジェスト欄にタグを追加
- * @param {Map<Number,string>} tags 
- * @returns 
- */
-function setSuggestedTags(tags){
-    const div = document.getElementById('suggested-tag-list');
-    div.innerHTML = ''; // サジェスト欄破棄
-    if(tags.size === 0) return;
-
-    // 
-    const fragment = document.createDocumentFragment();
-    let added = false;
-    tags.forEach((name, id) => {
-        // 既にtag-listに含まれているか
-        if(selectedTagList.has(id)) return;
-        added = true;
-
-        // タグ作成
-        const button = suggestedTag(name, (btn) => {
-            btn.remove();
-            addToSelectedTagList(id, name);
-        })
-
-        fragment.appendChild(button);
-    });
-
-    if(!added){ // サジェストタグなし
-        setSearchState('noData');
-        return;
-    }
-
-    div.appendChild(fragment);
-}
-
-// 検索状況（サジェスト欄の上）
-function setSearchState(state) {
-    if(state === ''){
-        document.getElementById('tag-search-state').classList.add('hidden');
-        return;
-    }
-    const div = document.getElementById('tag-search-state');
-    div.textContent = state;
-    div.classList.remove('hidden');
-}
-
-// タグ検索入力欄の変更
-document.getElementById('input-tag').addEventListener('input', async (event) => {
-    const text = event.target.value;
-
-    /// 空白を削除
-    const words = text.split(/[\s\u3000]/ug).filter(phrase => phrase.trim() !== '');
-
-    // 前回の検索との比較
-    if(arrayEqual(previousInput_tag, words)){
-        return;
-    }
-
-    previousInput_tag = words;
-    setSuggestedTags(new Map()); // サジェスト欄破棄
-
-    // キーワードなし
-    if(words.length === 0){
-        setSearchState(''); // 検索状態欄の破棄
-        return;
-    }
-
-    // とりあえず一つ目だけ
-    const word_ = words[0];
-
-    // 中間一致検索
-    setSearchState('loading');
-    const results = await searchTag(word_);
-    if(results === null) {
-        setSearchState("error");
-        return;
-    }
-
-    // 検索結果なし
-    if(results.size === 0) {
-        setSearchState('noData');
-        return;
-    }
-
-    setSearchState('');
-    setSuggestedTags(results);
-});
-
-function addToSelectedTagList(id, name) {
-    const div = document.getElementById('selected-tag-list');
-
-    if(selectedTagList.size === 0) { 
-        // 「すべて」タグを無効にする
-        div.querySelector('.selected-tag').classList.add('hidden');
-    }
-
-    // 選択中のタグに追加
-    selectedTagList.set(id, name);
-
-    // タグボタンの作成
-    const tag = selectedTag(id, name, (_id, btn) => {
-        removeFromSelectedTagList(_id, btn);
-    })
-
-    // タグボタンを追加
-    div.appendChild(tag);
-}
-
-function removeFromSelectedTagList(id, tagButton) {
-    // 選択中のリストから削除
-    selectedTagList.delete(id);
-    // タグボタンを親から削除
-    tagButton.remove();
-
-    if(selectedTagList.size === 0){
-        // 「すべて」タグを有効にする
-        document.getElementById('selected-tag-list').querySelector('.selected-tag').classList.remove('hidden');
-    }
 }
