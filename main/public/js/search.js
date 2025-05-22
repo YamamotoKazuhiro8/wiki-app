@@ -37,6 +37,122 @@ function selectedTag(id, name, onclick) {
     return div;
 }
 
+
+// タグ検索入力欄の変更
+document.getElementById('input-tag').addEventListener('input', debouncedTagInput)
+
+// debounceで300ms以内の連続入力を制御
+const debouncedTagInput = debounce(handleTagInput, 300);
+
+// debounce関数の定義
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout); // 前回のタイマーをキャンセル
+        timeout = setTimeout(() => {
+            func.apply(this, args); // 一定時間後に実行
+        }, wait);
+    };
+}
+
+// タグ検索処理
+async function handleTagInput() {
+    // 入力されたタグの取得
+    const tags = getTags();
+    if(!shouldStartTagSearch(tags)) return;
+    beforeTagSearch();
+
+    const result = await searchTag(tags);
+
+    // 結果表示待ちか判定
+
+    onTagSearchComplete(result);
+}
+
+// AbortController
+let tagSearchController = null;
+async function handleTagInput() {
+    const tags = getTags();
+    if (!shouldStartTagSearch(tags)) return;
+    beforeTagSearch();
+
+    // リクエスト中の検索をキャンセル
+    if (tagSearchController) tagSearchController.abort();
+    // AbortControllerを作成
+    tagSearchController = new AbortController();
+
+    try {
+        const result = await searchTag(tags, tagSearchController.signal); // 必ず1つ以上のタグ
+        onTagSearchComplete(result);
+    } catch(error) {
+        if(error.name === 'noData'){
+            // noDataの表示
+            return;
+        }
+        // エラーの表示
+        return;
+    }
+}
+
+
+// タグの検索
+/**
+ * @param {string} word
+ * @return {Promise<Map<Number, string>>} 検索結果（タグのMap）<tag_id, name>
+ */
+async function searchTag(word, signal){
+
+    const res = await fetch('/api/search', {
+        method:'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            type: 'tag',    // type設定
+            keyword: word   // 検索ワード
+        })
+    });
+
+    if(!res.ok) throw new Error(res.status);
+
+    const data = await res.json();
+
+    if(data.status === 'error') {
+        const err = new Error(data.message);
+        err.name = 'error';
+        throw err;
+    } else if(data.status === 'noData') {
+        const err = new Error('データなし');
+        err.name = 'noData';
+        throw err;
+    }
+
+    // Mapに変換
+    return new Map(Object.entries(data.results));
+}
+
+
+// タグサーチを開始するか判定
+function shouldStartTagSearch() {
+    // 条件判定処理（例：入力が空でない、通信中でないなど）
+}
+
+// タグサーチの開始直前に呼ばれる
+// UIの準備
+function beforeTagSearch() {
+    // 読み込み中の表示
+}
+
+// タグサーチ完了時に呼び出される
+// 
+function onTagSearchComplete(result) {
+    // 読み込み表示の終了
+
+    // サジェストに追加
+}
+
+// ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+
 /**
  * サジェスト欄にタグを追加
  * @param {Map<Number,string>} tags 
@@ -124,38 +240,6 @@ document.getElementById('input-tag').addEventListener('input', async (event) => 
     setSearchState('');
     setSuggestedTags(results);
 });
-
-// タグの検索
-/**
- * 
- * @param {string} word
- * @return {Promise<Map<Number, string>>} 検索結果（タグのMap）<tag_id, name>
- */
-async function searchTag(word){
-    try {
-        const res = await fetch('/api/search', {
-            method:'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                type: 'tag',    // type設定
-                keyword: word   // 検索ワード
-            })
-        });
-
-        if(!res.ok) throw new Error(res.status);
-
-        const data = await res.json();
-
-        if(data.status === 'error') throw new Error(data.message);
-
-        // Mapに変換
-        return new Map(Object.entries(data.results));
-    } catch (error) {
-        return new Map();
-    }
-}
 
 function addToSelectedTagList(id, name) {
     const div = document.getElementById('selected-tag-list');

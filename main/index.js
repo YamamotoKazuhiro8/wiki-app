@@ -4,6 +4,7 @@
 const path = require('path');
 const express = require('express');
 const mysql = require('mysql2/promise');
+const { exit } = require('process');
 require('dotenv').config();
 
 // アプリ設定
@@ -102,12 +103,14 @@ app.post('/api/search', async (req, res) => {
         const connection = await mysql.createConnection(dbConfig);
         const [rows] = await connection.execute('SELECT id,name FROM tags WHERE name Like ?', [`%${keyword}%`]);
 
+        if(rows.length === 0) {
+            res.json({status: 'noData'});
+        }
 
         // 優先度でソート
 
 
         // Mapに変換
-
         const resultObj = {};
         rows.forEach(row => {
             resultObj[row.id] = row.name;
