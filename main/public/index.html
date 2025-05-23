@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>検索</title>
     <link rel="stylesheet" href="css/index.css">
-    <script src="js/search.js" defer></script>
+    <script src="js/searchSystem.js"></script>
 </head>
 <body>
     <div id="page-container">
@@ -15,26 +15,25 @@
             <button onclick="">新規作成</button>
         </div>
 
-        <!--キーワード検索-->
-        <div class="search-area">
-            <div class="search-column">
-                <input type="text" placeholder="キーワード検索" id="input-page">
-                <button onclick="">🔍</button>     
-            </div>         
-        </div>
+        <br>
 
         <!--タグ検索-->
-        <div class="search-area">
-            <input type="text" placeholder="タグ検索" id="input-tag">  
-            <div id="tag-search-state"></div>
-            <div id="suggested-tag-list"></div>
-        </div>
+        <div>タグ</div>
+        <input type="text" placeholder="検索" id="input-tag">  
+        <div id="tag-search-state"></div>
+        <div id="suggest-tag-list"></div>
         <!--選択したタグの表示-->
-        <div>
-            <div id="selected-tag-list">
-                <div class="selected-tag">すべて</li>
-            </div>
+        <div id="selected-tag-list">
+            <div class="selected-tag">すべて</li>
         </div>
+
+        <br>
+
+        <!--タイトル検索-->
+        <div>title</div>
+        <input type="text" placeholder="検索" id="input-title">
+
+        <br><br>
 
         <!--並び順選択-->
         <label for="sortOrder">並び順</label>
@@ -44,8 +43,10 @@
             <option value="new">新しい順</option>
         </select>
 
+        <br><br>
+
         <!--検索結果表示-->
-        <div id="search-result-container">
+        <div id="search-results">
             結果表示
         </div>
     </div>

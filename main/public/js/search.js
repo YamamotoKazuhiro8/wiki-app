@@ -9,7 +9,7 @@ let pageSearchController = null;
 
 // ーーー初期化ーーー
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('input-tag').addEventListener('input', debouncedTagInput);
+    document.getElementById('input-tag').addEventListener('input', debouncedInput);
 });
 
 // ーーーメイン処理ーーー
