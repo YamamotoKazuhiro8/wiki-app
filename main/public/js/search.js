@@ -1,4 +1,6 @@
 
+// SearchSystemに移行中
+
 // 注意:new Map(Object.entries(data.results))は大量になると重い。Object.keys(data.results)を使う
 
 let previousInput_tag = [];           // タグ検索欄における前回の入力

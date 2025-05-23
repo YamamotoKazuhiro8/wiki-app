@@ -6,6 +6,8 @@
  
 // ページ検索イベント発行
 
+// 次 callBack関数
+
 const ids = require ('./domIDs');
 const {debounce} = require('./utils');
 const {getById} = require('./domUtils');
