@@ -12,21 +12,39 @@ const {getById} = require('./domUtils');
 const InputField = require ('./inputField');
 const SearchService = require('./searchService');
 
+const selectedTags = new Map(); //Map<Number, string>
+
 // 初期化
 document.addEventListener('DOMContentLoaded',() => {
-    const tagInput = new InputField(getById(ids.TAG_INPUT));
     const tagSearchService = new SearchService(
+        () => { // successCallback
+        }, 
+        () => {}, // noDataCallback
+        () => {}, // errorCallback
+        () => {}  // cancelCallback
+    );
+
+    const pageSearchService = new SearchService(
         () => {}, // successCallback
         () => {}, // noDataCallback
         () => {}, // errorCallback
         () => {}  // cancelCallback
     );
-    const debounceTagSearch = debounce(() => {
-        tagSearchService.search({
-            type: 'tag', slugs: tagInput.getWords()
-        })
-    },200)
-    tagInput.addEvent('input', debounceTagSearch);
 
+    // タグ入力
+    const tagInput = new InputField(getById(ids.TAG_INPUT));
+    const debounceTagInput = debounce(() => {
+        const slugs = tagInput.getWords(); // 入力されたタグ
+        tagSearchService.search({type: 'tag', slugs: slugs}); 
+    }, 200);
+    tagInput.addEvent('input', debounceTagInput);
+
+    // タイトル入力
     const titleInput = new InputField(getById(ids.TITLE_INPUT));
+    const debounceTitleInput = debounce(() => {
+        const titleSlugs = titleInput.getWords();
+        const tagIDs = [...selectedTags.keys()];
+        pageSearchService.search({type: 'page', titleSlugs: titleSlugs, tagIDs: tagIDs});
+    }, 300);
+    titleInput.addEvent('input', debounceTitleInput);
 })
