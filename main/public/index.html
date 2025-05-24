@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>検索</title>
     <link rel="stylesheet" href="css/index.css">
-    <script src="js/searchSystem.js"></script>
+    <script src="js/search/search.js"></script>
 </head>
 <body>
     <div id="page-container">
@@ -20,13 +20,18 @@
         <!--タグ検索-->
         <div>タグ</div>
         <input type="text" placeholder="検索" id="input-tag">  
-        <div id="tag-search-state"></div>
-        <div id="suggest-tag-list"></div>
-        <!--選択したタグの表示-->
-        <div id="selected-tag-list">
-            <div class="selected-tag">すべて</li>
+        <div id="tag-search-status">
+            <div id="tag-search-status-close"></div>
+            <div id="tag-search-status-loading">ローディング</div>
+            <div id="tag-search-status-noData">データなし</div>
+            <div id="tag-search-status-error">エラー</div>
         </div>
+        <div id="tag-suggestions"></div>
 
+        <!-- 選択中のタグ -->
+        <div id="selected-tags">
+            <div class="selected-tag">すべて</div>
+        </div>
         <br>
 
         <!--タイトル検索-->
@@ -46,7 +51,7 @@
         <br><br>
 
         <!--検索結果表示-->
-        <div id="search-results">
+        <div id="page-suggests">
             結果表示
         </div>
     </div>
