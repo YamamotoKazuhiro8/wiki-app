@@ -44,26 +44,26 @@
 
     <!-- markdown-it -->
     <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-container/dist/markdown-it-container.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-container/dist/markdown-it-container.min.js"></script>
 
     <!-- プラグイン -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji/dist/markdown-it-emoji.min.js"></script>                絵文字 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists/dist/markdown-it-task-lists.min.js"></script>     タスクリスト -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote/dist/markdown-it-footnote.min.js"></script>         脚注 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub/dist/markdown-it-sub.min.js"></script>                   下付き文字 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup/dist/markdown-it-sup.min.js"></script>                   上付き文字 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-ins/dist/markdown-it-ins.min.js"></script>                   下線 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark/dist/markdown-it-mark.min.js"></script>                 マーカー -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/markdown-it-anchor/dist/markdown-it-anchor.min.js"></script>             アンカー付き見出し -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji/dist/markdown-it-emoji.min.js"></script>                
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists/dist/markdown-it-task-lists.min.js"></script>   
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote/dist/markdown-it-footnote.min.js"></script>       
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub/dist/markdown-it-sub.min.js"></script>                 
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup/dist/markdown-it-sup.min.js"></script>                 
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-ins/dist/markdown-it-ins.min.js"></script>                  
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark/dist/markdown-it-mark.min.js"></script>               
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-anchor/dist/markdown-it-anchor.min.js"></script>         
 
     <!-- KaTeX数式 -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-katex/dist/markdown-it-katex.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-katex/dist/markdown-it-katex.min.js"></script>
 
     <!-- コードハイライト -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/build/highlight.min.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/build/highlight.min.js"></script>
 </head>
 <body>
     <button onclick="toggleEditor()" id="toggleEditor">開く</button>
@@ -95,35 +95,43 @@
     <script>
         const md = window.markdownit({
             html: true,
-            // linkify: true,
-            // typographer: true
+            linkify: true,
+            typographer: true,
+            highlight: function (str, lang) {
+                if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+                    try {
+                        return '<pre class="hljs"><code>' +
+                            hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                            '</code></pre>';
+                    } catch (__) {}
+                }
+                return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+            }
         });
 
         // プラグイン適用
-        // md
-        // .use(window.markdownitEmoji)
-        // .use(window.markdownitTaskLists, { enabled: true })
-        // .use(window.markdownitFootnote)
-        // .use(window.markdownitSub)
-        // .use(window.markdownitSup)
-        // .use(window.markdownitIns)
-        // .use(window.markdownitMark)
-        // .use(window.markdownitAnchor, {
-        // })
-        // .use(window.markdownitKatex)
-        // .use(window.markdownitContainer, 'details', {
-        //     render(tokens, idx) {
-        //         const token = tokens[idx];
-        //         if (token.nesting === 1) {
-        //             // 開始タグ
-        //             const info = token.info.trim().slice('details'.length).trim();
-        //             return `<details><summary>${md.utils.escapeHtml(info)}</summary>\n`;
-        //         } else {
-        //             // 終了タグ
-        //             return '</details>\n';
-        //         }
-        //     }
-        // });
+        if (window.markdownitEmoji) md.use(window.markdownitEmoji);
+        if (window.markdownitTaskLists) md.use(window.markdownitTaskLists, { enabled: true });
+        if (window.markdownitFootnote) md.use(window.markdownitFootnote);
+        if (window.markdownitSub) md.use(window.markdownitSub);
+        if (window.markdownitSup) md.use(window.markdownitSup);
+        if (window.markdownitIns) md.use(window.markdownitIns);
+        if (window.markdownitMark) md.use(window.markdownitMark);
+        if (window.markdownitKatex) md.use(window.markdownitKatex);
+        if (window.markdownitAnchor) md.use(window.markdownitAnchor);
+        if (window.markdownitContainer) {
+            md.use(window.markdownitContainer, 'details', {
+                render(tokens, idx) {
+                    const token = tokens[idx];
+                    if (token.nesting === 1) {
+                        const info = token.info.trim().slice('details'.length).trim();
+                        return `<details><summary>${md.utils.escapeHtml(info)}</summary>\n`;
+                    } else {
+                        return '</details>\n';
+                    }
+                }
+            });
+        }
     </script>
 
     <script>
@@ -179,7 +187,7 @@
         });
 
         // 初期読み込み
-        fetchPage();
+        // fetchPage();
     </script>
 </body>
 </html>

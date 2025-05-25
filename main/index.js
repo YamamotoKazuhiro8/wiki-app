@@ -28,6 +28,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
 });
 
+app.get('/page', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'public', 'page.html'));
+});
+
+
 // title に対応するページを返す
 // ブラウザから /page/xxx にアクセスしたとき page.html を返す
 app.get('/page/:title', (req, res) => {

@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded',() => {
     // タイトル入力
     const titleInput = new InputField(getById(ids.TITLE_INPUT));
 
+    // 検索状態の表示切替え
     const tagSearchStatusSelection = new Selection(
         ids.TAG_SEARCH_STATUS_CLOSE,
         ids.TAG_SEARCH_STATUS_LOADING,

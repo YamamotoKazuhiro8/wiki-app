@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Tast</title>
+    <link rel="stylesheet" href="page.css">
+    <script src="js/markdown/parser.js"></script>
+    <script src="js/markdown/renderer.js"></script>
+</head>
+<body>
+    <div id="edit-area-container">
+        <div id="viewer"></div>
+        <div id="resizer"></div>
+        <div id="input">
+            <textarea placeholder="Markdownを入力してください..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        const textArea = document.querySelector('#input textarea');
+        const viewer   = document.getElementById('viewer');
+
+        textArea.addEventListener('input', () => {
+            const text = textArea.value;
+        });
+    </script>
+</body>
+</html>
