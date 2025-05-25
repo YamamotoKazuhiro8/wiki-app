@@ -1,22 +1,27 @@
 
 // Markdown -> HTML 変換
 
+// StateMachineベース
+
+const {inlineProcess, inlineType} = require('./lexer'); // インライン解析器
+
 function parse(markdown) {
     const lines = text.split('\n');
-    const results = [];
 
     let state = states.NORMAL;
     let row = 0;
     while(row < lines.length) {
         const line = lines[row];
 
-        // 行の解析 
-        const result = lineParsers[state](line);
+        // 状態遷移
+        const newState = stateTransition[state](line);
+        // 解析
+        const result = process[newState](line);
 
         // ASTの作成
 
         // 状態の遷移
-        state = result.state;
+        state = newState.state;
 
         row++;
     }
@@ -27,88 +32,42 @@ function parse(markdown) {
 // 解析状態
 const states = {
     NORMAL: 'NORMAL',
-    H2: 'H2',
-    H3: 'H3',
+    Section: 'Section',
     LIST: 'LIST',
     CODE: 'CODE',
+    TABLE: 'TABLE',
 };
 
-// 行タイプ
-const lineType = {
-    NORMAL: 'NORMAL',
-    H2_HEADER: 'H2_HEADER',
-    H2_CONTENT: 'H2_CONTENT',
-    H3_HEADER : 'H3_HEADER',
-    H3_CONTENT: 'H3_CONTENT',
-    LIST_ITEM: 'LIST_ITEM',
-    BLOCKQUOTE: 'BLOCKQUOTE',
-};
-
-// 行先頭解析
+// 行頭解析
 const match = {
-    h2 : (line) => {
+    section : (line) => {
         return line.startsWith('## ');
-    },
-    h3 : (line) => {
-        return line.startsWith('### ');
     },
 }
 
-// 行解析器
-const lineParsers = {
+// 行頭を読んで状態遷移
+// 上の行の状態を受け取る
+const stateTransition = {
     [states.NORMAL]: (line) => {
         switch(true) {
-            case match.h2(line):
-                return createResult(states.H2, lineType.H2_HEADER, inlineProcess.h2_header(line));
-            case match.h3(line):
-                return createResult(states.H3, lineType.H3_HEADER, inlineProcess.h3_header(line));
-            default:
-                return createResult(states.NORMAL, lineType.NORMAL, inlineProcess.linkOnly(line));
+            case match.section(line): return states.Section;
+            default: return states.NORMAL;
         }
     },
-    [states.H2]: (line) => {
+    [states.Section]: (line) => {
         switch(true) {
-            case match.h2(line):
-                return createResult(states.H2, lineType.H2_HEADER, inlineProcess.h2_header(line));
-            case match.h3(line):
-                return createResult(states.H3, lineType.H3_HEADER, inlineProcess.h3_header(line));
-            default:
-                return createResult(states.H2, lineType.H2_CONTENT, inlineProcess.normal(line));
+            case match.section(line): return states.Section;
+            default: return states.NORMAL;
         }
     },
-    [states.H3]: (line) => {},
     [states.LIST]: (line) => {},
     [states.CODE]: (line) => {}
 }
 
-// インライン解析
-const inlineProcess = {
-    noProcss: (line) => {
-        return line;
-    },
-
-
-    italic: (line) => {
-    },
-    linkOnly: (line) => {
-    },
-    normal: (line) => {
-    },
-
-
-    h2_header: (line) => {
-        return line.slice(3).trim();
-    },
-    h3_header: (line) => {
-        return line.slice(4).trim();
-    },
-}
-
-// 行解析結果
-function createResult(state, type, text){
-    return {
-        state: state,
-        type: type,
-        text: text
-    }
+// 解析処理
+const process = {
+    [states.NORMAL]: { state: states.NORMAL, text: inlineProcess(line, inlineType.all) },
+    [states.Section]: { state: states.Section, text: inlineProcess(line.slice(3), inlineType.link) },
+    [states.LIST]: (line) => {},
+    [states.CODE]: (line) => {}
 }
